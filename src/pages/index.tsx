@@ -1,39 +1,82 @@
-/* eslint-disable @next/next/no-img-element */
-/* eslint-disable @next/next/no-document-import-in-page */
-import { GetServerSideProps } from 'next'
-import type { NextPage } from 'next'
-import { SubscribeButton } from '../components/SubscribeButton'
+import { GetStaticProps } from "next";
+import { SubscribeButton } from "../components/SubscribeButton";
 
-import styles from './home.module.scss'
-import { stripe } from '../services/stripe'
+import styles from "./home.module.scss";
+import { stripe } from "../services/stripe";
+import { Container } from "../components/Container";
 
-const Home: NextPage = () => {
+interface GetProductProps {
+  priceId: string;
+  amount: number;
+}
+
+interface ProductsProps {
+  product: GetProductProps;
+}
+
+export default function Home({ product }: ProductsProps) {
   return (
     <>
-      <main className={styles.contentContainer}>
+      <Container>
         <section className={styles.hero}>
           <span>👏 Hey, welcome</span>
-          <h1>News about the <span>React</span>World</h1>
+          <h1>
+            News about the <span>React</span>World
+          </h1>
           <p>
-            Mussum Ipsum, cacilds vidis litro abertis. Mauris nec dolor in eros.<br />
-            <span>for $9.90 month</span>
+            Mussum Ipsum, cacilds vidis litro abertis. Mauris nec dolor in eros.
+            <br />
+            <span>for {product.amount} month</span>
           </p>
-          <SubscribeButton />
+          <SubscribeButton priceId={product.priceId} />
         </section>
         <img src="/images/avatar.svg" alt="Girl coding" />
-      </main>
+      </Container>
     </>
-  )
+  );
 }
-export default Home
 
-export const getServerSideProps: GetServerSideProps = async () => {
-  const price = await stripe.prices.retrieve('price_1JcqYFFpaRpHBQOUkAMNRD3v', {
-    expand: ['product']
-  })
+export const getStaticProps: GetStaticProps = async () => {
+  const price = await stripe.prices.retrieve("price_1JcqYFFpaRpHBQOUkAMNRD3v");
+  const product = {
+    priceId: price.id,
+    amount:
+      price.unit_amount &&
+      Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
+      }).format(price.unit_amount / 100),
+  };
+
   return {
     props: {
-      name: 'Luciano',
-    }
-  }
-}
+      product,
+    },
+    revalidate: 10, //10s
+  };
+};
+
+/* export const getServerSideProps: GetServerSideProps = async () => {
+  const price = await stripe.prices.retrieve("price_1JcqYFFpaRpHBQOUkAMNRD3v");
+
+     const price = await stripe.prices.retrieve("price_1JcqYFFpaRpHBQOUkAMNRD3v", {
+    expand: ["product"],
+  }); 
+
+  const product = {
+    //name: price.product,
+    priceId: price.id,
+    amount:
+      price.unit_amount &&
+      Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
+      }).format(price.unit_amount / 100),
+  };
+
+  return {
+    props: {
+      product,
+    },
+  };
+}; */
